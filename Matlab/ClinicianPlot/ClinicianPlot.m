@@ -49,6 +49,10 @@ function ClinicianPlot_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for ClinicianPlot
 handles.output = hObject;
 
+handles.fileName = '';
+handles.pathName = '';
+handles.fullName = '';
+
 handles.chans = [1-96]; % Channels to plot
 handles.numChans = length(chans); % Number of channels
 
@@ -76,16 +80,83 @@ varargout{1} = handles.output;
 % --- Executes on button press in MonoPhasicButton.
 function MonoPhasicButton_Callback(hObject, eventdata, handles)
 
+if handles.plotMode ~= 1
+    handles.plotMode = 1;
+    UpdatePlot(hObject,handles)
+end % END IF
+guidata(hObject, handles);
 
 % --- Executes on button press in BiPhasicButton.
 function BiPhasicButton_Callback(hObject, eventdata, handles)
 
-
+if handles.plotMode ~= 2
+    handles.plotMode = 2;
+    UpdatePlot(hObject,handles)
+end % END IF
+guidata(hObject, handles);
 
 function ChannelsET_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of ChannelsET as text
 %        str2double(get(hObject,'String')) returns contents of ChannelsET as a double
 
+tmpChan = get(hobject, 'String');
+
+if ~isempty(regexp(tmpChan, '([0-9]+)-([0-9]+)', 'Tokens'))
+    
+    tmpChan = regexp(tmpChan, '([0-9]+)-([0-9]+)', 'Tokens');
+    switch handles.plotMode
+        case 1
+            
+            tmpList = [];
+            for i = 1:length(tmpChan)
+                tmpList = [tmpList, str2num(tmpChan{i}{1}):str2num(tmpChan{i}{2})];
+            end % END FOR
+            
+        case 2
+            
+            tmpList = [];
+            for i = 1:length(tmpChan)
+                tmpList = [tmpList, str2num(tmpChan{i}{1}), str2num(tmpChan{i}{2})];
+            end % END FOR
+            
+            diffList = diff(tmpList);
+            diffIdx = find(diffList(1:2:end) > 1 == 1);
+            
+            for i = 1:length(diffIdx)
+                idx = diffIdx(i);
+                
+            end % END FOR
+            
+            % Extract pairs
+            % if pair is more than 1 off, then make pairs between input
+                % 1-10 -> 1-2, 3-4, 5-6, 7-8, 9-10
+            % List pairs as the odd component
+                % 1-10 -> chans = 1,3,5,7,9
+            
+        otherwise
+    end % END SWITCH
+else     
+    tmpChan = regexp(tmpChan, '([0-9]+)', 'Tokens');
+    tmpList = [];
+    
+    for i = 1:length(tmpChan)
+        tmpList(1,i) = num2str(tmpChan({i}{1});
+    end % END FOR
+    switch handles.ploMode
+        case 1
+            handles.chans = tmpList;
+
+        case 2
+            tmpList(mod(tmpList,2)~=0) =  tmpList(mod(tmpList,2)~=0) + 1;
+            
+            % TODO Check for duplicates
+            
+            tmpList = tmpList - 1;
+        otherwise
+    end % END SWITCH
+end % END IF
+guidata(hObject, handles);
+% EOF
 
 % --- Executes during object creation, after setting all properties.
 function ChannelsET_CreateFcn(hObject, eventdata, handles)
@@ -98,6 +169,13 @@ end
 function PatchET_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of PatchET as text
 %        str2double(get(hObject,'String')) returns contents of PatchET as a double
+
+tmpPatch = get(hObject,'String');
+
+handles.patchNum = str2num(tmpPatch);
+guidata(hObject, handles);
+
+
 
 
 % --- Executes during object creation, after setting all properties.
@@ -112,6 +190,7 @@ function ScaleDD_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns ScaleDD contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from ScaleDD
 
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function ScaleDD_CreateFcn(hObject, eventdata, handles)
@@ -125,15 +204,24 @@ function TimeET_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of TimeET as text
 %        str2double(get(hObject,'String')) returns contents of TimeET as a double
 
+% ************************************
+% Call a SetTime() function in order to calculate the sameples required.
+% The sampling rate is loaded from the chosen file.
+% ************************************
+
 tmpText = get(hObject,'String');
 regText =  regexp(tmpText, '([0-9]+)', 'Tokens');
 
-handles.timeCount = str2num(regText{1}{1})*60*30000; % Samples per minute;
+handles.timeCount = str2num(regText{1}{1})*60*handles.fs; % Samples per minute;
 
 % If the user inputs minutes and seconds
 if length(regText) == 2
-    handles.timeCount = timeCount + str2num(regText{2}{1})*30000; % Samples per second
+    handles.timeCount = timeCount + str2num(regText{2}{1})*handles.fs; % Samples per second
 end % END IF
+
+handles.reLoad = 1;
+
+UpdatePlot(hObject, handles);
 
 guidata(hObject, handles);
 
@@ -158,8 +246,96 @@ handles.fullNime = fullfile(pathName, fileName);
 guidata(hObject, handles);
 % END
 
-function BiPhasicPlot(hObject, handles)
+function UpdatePlot(hObject,handles)
 
-function MonoPhasicPlot(hObject, handles)
+if handles.reLoad
+    LoadData(handles);
+end % END IF
 
-function UpdatePlot(hObject, handles)
+clf
+hold on
+numPlot = handles.numChans / handles.plotMode;
+
+% Offset Data
+offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:));
+handles.plotData = handles.data(handles.chans,:) + offset;
+
+% Plot pathces
+
+elecPerPatch = floor(numPlot/handles.numPatch);
+if mod(elecPerPatch,2) == 0
+    YY = zeros(elecPerPatch, 4);
+    
+    for i = 1:numPatch
+        YY(i,1:4) = [elecPerPatch*(i-1)*10+5 elecPerPatch*(i-1)*10+5, elecPerPatch*i*10+5, elecPerPatch*i*10+5];
+        XX(i,1:4) = [0, 1000, 1000, 0];
+    end % END FOR
+    
+    for j = 1:numPatch
+        
+        pData = patch(XX(j,:), YY(j,:), 1);
+        
+        set(pData, 'EdgeColor', 'none')
+        if ~mod(j,2)
+            set(pData, 'FaceColor', 'g')
+        else
+            set(pData, 'FaceColor', 'b')
+        end % END IF
+        set(pData, 'FaceAlpha', 0.1)
+        
+    end % END FOR
+    hold on
+end % END IF
+
+% Plot verticial divisions
+
+division = 30*handles.fs; % Have a vertical line every 30 seconds
+
+numVert = floor(length(handles.time)/division);
+
+for i = 1:numVert
+    
+    plot([i*division, i*division], [0, numPlot*10+10], 'Color', [0.5, 0.5, 0.5]);
+    
+end % END FOR
+
+switch handles.plotMode
+    case 1
+        plot(handles.time,handles.plotData(handles.chans,:)', 'k');
+        
+        xlim([handles.time(1), handles.time(end)])
+        ylim([5, numChans*10+5])
+        
+        set(gca, 'YTick', [10:10:numChans*10])
+        set(gca, 'YTickLabel', [1:numChans])
+        
+        set(zoom(gcf),'Motion','horizontal','Enable','on');
+        set(pan(gcf),'Motion','horizontal','Enable','on');
+        
+    case 2
+        
+        plot(handles.time,handles.plotData(handles.chans,:)', 'k');
+        
+        xlim([handles.time(1), handles.time(end)])
+        ylim([5, numChans*10+5])
+        
+        % Generate Y Labels
+        for i = 1:numChans/2
+            
+            labelYAxis{i} = [num2str(handles.chans(i)*2-1), '-', num2str(handles.chans(i)*2)];
+            
+        end % END FOR
+        
+        set(gca, 'YTick', [10:10:handles.numChans*10])
+        set(gca, 'YTickLabel', labelYAxis)
+        
+        set(zoom(gcf),'Motion','horizontal','Enable','on');
+        set(pan(gcf),'Motion','horizontal','Enable','on');
+        
+    otherwise
+end % END SWITCH
+
+guidata(hObject, handles);
+ % END
+ 
+ % EOF

@@ -22,7 +22,7 @@ function varargout = ClinicianPlot(varargin)
 
 % Edit the above text to modify the response to help ClinicianPlot
 
-% Last Modified by GUIDE v2.5 14-Dec-2014 22:27:26
+% Last Modified by GUIDE v2.5 12-Jan-2015 11:47:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -53,15 +53,15 @@ handles.fileName = '';
 handles.pathName = '';
 handles.fullName = '';
 
-handles.chans = [1-96]; % Channels to plot
-handles.numChans = length(chans); % Number of channels
+handles.chans = [1:96]; % Channels to plot
+handles.numChans = length(handles.chans); % Number of channels
 
-handles.patchNum = 4; % Number of patches
+handles.numPatch = 4; % Number of patches
 handles.scale = 1;    % Scale: 1 = 1uV, 2 = 10uV, 3=100uV, 4 = 1mV
 handles.data = []; % Data to plot
 handles.specData = []; % Spectrogram
 handles.plotMode = 1; % Default Mode is mono-phasic plot
-handles.fs = 30000; % 30,000 samples/sec
+handles.fs = 2000; % 30,000 samples/sec
 
 % Update handles structure
 guidata(hObject, handles);
@@ -82,7 +82,7 @@ function MonoPhasicButton_Callback(hObject, eventdata, handles)
 
 if handles.plotMode ~= 1
     handles.plotMode = 1;
-    UpdatePlot(hObject,handles)
+    set(handles.StateSTOut, 'String', 'MonoPhasic');
 end % END IF
 guidata(hObject, handles);
 
@@ -91,7 +91,7 @@ function BiPhasicButton_Callback(hObject, eventdata, handles)
 
 if handles.plotMode ~= 2
     handles.plotMode = 2;
-    UpdatePlot(hObject,handles)
+    set(handles.StateSTOut, 'String', 'BiPhasic');
 end % END IF
 guidata(hObject, handles);
 
@@ -109,14 +109,14 @@ if ~isempty(regexp(tmpChan, '([0-9]+)-([0-9]+)', 'Tokens'))
             
             tmpList = [];
             for i = 1:length(tmpChan)
-                tmpList = [tmpList, str2num(tmpChan{i}{1}):str2num(tmpChan{i}{2})];
+                tmpList = [tmpList, str2double(tmpChan{i}{1}):str2double(tmpChan{i}{2})];
             end % END FOR
             
         case 2
             
             tmpList = [];
             for i = 1:length(tmpChan)
-                tmpList = [tmpList, str2num(tmpChan{i}{1}), str2num(tmpChan{i}{2})];
+                tmpList = [tmpList, str2double(tmpChan{i}{1}), str2double(tmpChan{i}{2})];
             end % END FOR
             
             diffList = diff(tmpList);
@@ -140,7 +140,7 @@ else
     tmpList = [];
     
     for i = 1:length(tmpChan)
-        tmpList(1,i) = num2str(tmpChan({i}{1});
+        tmpList(1,i) = num2str(tmpChan{i}{1});
     end % END FOR
     switch handles.ploMode
         case 1
@@ -172,7 +172,7 @@ function PatchET_Callback(hObject, eventdata, handles)
 
 tmpPatch = get(hObject,'String');
 
-handles.patchNum = str2num(tmpPatch);
+handles.numPatch = str2double(tmpPatch);
 guidata(hObject, handles);
 
 
@@ -190,6 +190,7 @@ function ScaleDD_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns ScaleDD contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from ScaleDD
 
+handles.scale = get(hObject,'Value');
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -197,7 +198,6 @@ function ScaleDD_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function TimeET_Callback(hObject, eventdata, handles)
@@ -212,16 +212,17 @@ function TimeET_Callback(hObject, eventdata, handles)
 tmpText = get(hObject,'String');
 regText =  regexp(tmpText, '([0-9]+)', 'Tokens');
 
-handles.timeCount = str2num(regText{1}{1})*60*handles.fs; % Samples per minute;
+handles.timeCount = str2double(regText{1}{1})*60*handles.fs; % Samples per minute;
+
+set(hObject, 'String', [regText{1}{1}, ':00']);
 
 % If the user inputs minutes and seconds
 if length(regText) == 2
-    handles.timeCount = timeCount + str2num(regText{2}{1})*handles.fs; % Samples per second
+    handles.timeCount = handles.timeCount + str2double(regText{2}{1})*handles.fs; % Samples per second
+    set(hObject, 'String', [regText{1}{1}, ':', regText{2}{1}]);
 end % END IF
 
 handles.reLoad = 1;
-
-UpdatePlot(hObject, handles);
 
 guidata(hObject, handles);
 
@@ -233,7 +234,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on button press in FileButton.
 function FileButton_Callback(hObject, eventdata, handles)
 
@@ -243,37 +243,55 @@ handles.fileName = fileName;
 handles.pathName = pathName;
 handles.fullNime = fullfile(pathName, fileName);
 
+handles.reLoad = 1;
+
+guidata(hObject, handles);
+% END
+
+% --- Executes on button press in UpdatePlotButton.
+function UpdatePlotButton_Callback(hObject, eventdata, handles)
+% hObject    handle to UpdatePlotButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+UpdatePlot(hObject,handles);
 guidata(hObject, handles);
 % END
 
 function UpdatePlot(hObject,handles)
 
 if handles.reLoad
-    LoadData(handles);
+    handles = LoadData(hObject,handles);
+    handles.reLoad = 0;
 end % END IF
 
-clf
+cla
+% axes(handles.plotAxis) 
 hold on
 numPlot = handles.numChans / handles.plotMode;
-
+chanPlot = 1:numPlot;
 % Offset Data
-offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:));
-handles.plotData = handles.data(handles.chans,:) + offset;
+offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:)));
+handles.plotData = handles.data(chanPlot,:) + offset;
+
+handles.time = [handles.timeCount - 0.5*60*handles.fs : handles.timeCount + 0.5*60*handles.fs];
+
+handles.time = handles.time./(60*handles.fs);
 
 % Plot pathces
-
 elecPerPatch = floor(numPlot/handles.numPatch);
 if mod(elecPerPatch,2) == 0
     YY = zeros(elecPerPatch, 4);
     
-    for i = 1:numPatch
+    for i = 1:handles.numPatch
         YY(i,1:4) = [elecPerPatch*(i-1)*10+5 elecPerPatch*(i-1)*10+5, elecPerPatch*i*10+5, elecPerPatch*i*10+5];
         XX(i,1:4) = [0, 1000, 1000, 0];
     end % END FOR
     
-    for j = 1:numPatch
+    for j = 1:handles.numPatch
         
         pData = patch(XX(j,:), YY(j,:), 1);
+        hold on
         
         set(pData, 'EdgeColor', 'none')
         if ~mod(j,2)
@@ -304,29 +322,29 @@ switch handles.plotMode
         plot(handles.time,handles.plotData(handles.chans,:)', 'k');
         
         xlim([handles.time(1), handles.time(end)])
-        ylim([5, numChans*10+5])
+        ylim([5, handles.numChans*10+5])
         
-        set(gca, 'YTick', [10:10:numChans*10])
-        set(gca, 'YTickLabel', [1:numChans])
+        set(gca, 'YTick', [10:10:handles.numChans*10])
+        set(gca, 'YTickLabel', [1:handles.numChans])
         
         set(zoom(gcf),'Motion','horizontal','Enable','on');
         set(pan(gcf),'Motion','horizontal','Enable','on');
         
     case 2
         
-        plot(handles.time,handles.plotData(handles.chans,:)', 'k');
+        plot(handles.time,handles.plotData(chanPlot,:)', 'k');
         
         xlim([handles.time(1), handles.time(end)])
-        ylim([5, numChans*10+5])
+        ylim([5, numPlot*10+5])
         
         % Generate Y Labels
-        for i = 1:numChans/2
+        for i = 1:handles.numChans/2
             
             labelYAxis{i} = [num2str(handles.chans(i)*2-1), '-', num2str(handles.chans(i)*2)];
             
         end % END FOR
         
-        set(gca, 'YTick', [10:10:handles.numChans*10])
+        set(gca, 'YTick', [10:10:numPlot*10])
         set(gca, 'YTickLabel', labelYAxis)
         
         set(zoom(gcf),'Motion','horizontal','Enable','on');
@@ -335,7 +353,31 @@ switch handles.plotMode
     otherwise
 end % END SWITCH
 
+zoom(gcf, 50)
+
 guidata(hObject, handles);
- % END
+% END FUNCTION
  
- % EOF
+function handles = LoadData(hObject, handles)
+
+tmpChans = 96;
+
+dataLen = length([handles.timeCount - 0.5*60*handles.fs : handles.timeCount + 0.5*60*handles.fs]);
+
+data = ones(tmpChans, dataLen).*repmat(sind(2*pi*(1:dataLen)), tmpChans,1) + randn(tmpChans, dataLen);
+
+scalePos = [1000,100,10,1];
+
+scaleVal = scalePos(handles.scale);
+
+handles.data = data.*scaleVal;
+
+if handles.plotMode == 2
+    handles.data = handles.data([1:2:tmpChans],:) - handles.data([2:2:tmpChans],:);
+end % END IF
+   
+
+guidata(hObject, handles);
+% END FUNCTION
+
+% EOF

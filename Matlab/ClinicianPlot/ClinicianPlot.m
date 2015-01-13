@@ -61,7 +61,7 @@ handles.scale = 1;    % Scale: 1 = 1uV, 2 = 10uV, 3=100uV, 4 = 1mV
 handles.data = []; % Data to plot
 handles.specData = []; % Spectrogram
 handles.plotMode = 1; % Default Mode is mono-phasic plot
-handles.fs = 2000; % 30,000 samples/sec
+handles.fs = 100; % 30,000 samples/sec
 
 % Update handles structure
 guidata(hObject, handles);
@@ -274,7 +274,7 @@ chanPlot = 1:numPlot;
 offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:)));
 handles.plotData = handles.data(chanPlot,:) + offset;
 
-handles.time = [handles.timeCount - 0.5*60*handles.fs : handles.timeCount + 0.5*60*handles.fs];
+handles.time = [handles.timeCount - 1*60*handles.fs : handles.timeCount + 1*60*handles.fs];
 
 handles.time = handles.time./(60*handles.fs);
 
@@ -290,7 +290,7 @@ if mod(elecPerPatch,2) == 0
     
     for j = 1:handles.numPatch
         
-        pData = patch(XX(j,:), YY(j,:), 1);
+        pData = patch(XX(j,:), 1);
         hold on
         
         set(pData, 'EdgeColor', 'none')
@@ -312,9 +312,9 @@ division = 30*handles.fs; % Have a vertical line every 30 seconds
 numVert = floor(length(handles.time)/division);
 
 for i = 1:numVert
-    
+    hold on
     plot([i*division, i*division], [0, numPlot*10+10], 'Color', [0.5, 0.5, 0.5]);
-    
+    hold on
 end % END FOR
 
 switch handles.plotMode
@@ -353,7 +353,7 @@ switch handles.plotMode
     otherwise
 end % END SWITCH
 
-zoom(gcf, 50)
+zoom(gcf, 10)
 
 guidata(hObject, handles);
 % END FUNCTION
@@ -362,7 +362,7 @@ function handles = LoadData(hObject, handles)
 
 tmpChans = 96;
 
-dataLen = length([handles.timeCount - 0.5*60*handles.fs : handles.timeCount + 0.5*60*handles.fs]);
+dataLen = length([handles.timeCount - 1*60*handles.fs : handles.timeCount + 1*60*handles.fs]);
 
 data = ones(tmpChans, dataLen).*repmat(sind(2*pi*(1:dataLen)), tmpChans,1) + randn(tmpChans, dataLen);
 

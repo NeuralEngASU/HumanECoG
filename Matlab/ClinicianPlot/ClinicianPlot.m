@@ -59,6 +59,8 @@ handles.numChans = length(handles.chans); % Number of channels
 handles.numPatch = 4; % Number of patches
 handles.scale = 1;    % Scale: 1 = 1uV, 2 = 10uV, 3=100uV, 4 = 1mV
 handles.data = []; % Data to plot
+handles.time = []; % Time points
+handles.timeVals = [0,0]; % Entered time values
 handles.specData = []; % Spectrogram
 handles.plotMode = 1; % Default Mode is mono-phasic plot
 handles.fs = 100; % 30,000 samples/sec
@@ -99,7 +101,7 @@ function ChannelsET_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of ChannelsET as text
 %        str2double(get(hObject,'String')) returns contents of ChannelsET as a double
 
-tmpChan = get(hobject, 'String');
+tmpChan = get(hObject, 'String');
 
 if ~isempty(regexp(tmpChan, '([0-9]+)-([0-9]+)', 'Tokens'))
     
@@ -155,6 +157,10 @@ else
         otherwise
     end % END SWITCH
 end % END IF
+
+handles.chans = tmpList;
+handles.numChans = length(handles.chans);
+
 guidata(hObject, handles);
 % EOF
 
@@ -213,14 +219,16 @@ tmpText = get(hObject,'String');
 regText =  regexp(tmpText, '([0-9]+)', 'Tokens');
 
 handles.timeCount = str2double(regText{1}{1})*60*handles.fs; % Samples per minute;
-
+handles.timeVals = [str2double(regText{1}{1})];
 set(hObject, 'String', [regText{1}{1}, ':00']);
 
 % If the user inputs minutes and seconds
 if length(regText) == 2
     handles.timeCount = handles.timeCount + str2double(regText{2}{1})*handles.fs; % Samples per second
     set(hObject, 'String', [regText{1}{1}, ':', regText{2}{1}]);
+    handles.timeVals(2) = [str2double(regText{2}{1})];
 end % END IF
+
 
 handles.reLoad = 1;
 
@@ -290,7 +298,7 @@ if mod(elecPerPatch,2) == 0
     
     for j = 1:handles.numPatch
         
-        pData = patch(XX(j,:), 1);
+        pData = patch(XX(j,:), YY(j,:), 1);
         hold on
         
         set(pData, 'EdgeColor', 'none')
@@ -307,19 +315,26 @@ end % END IF
 
 % Plot verticial divisions
 
-division = 30*handles.fs; % Have a vertical line every 30 seconds
+division = 0.5; % Have a vertical line every 30 seconds
 
-numVert = floor(length(handles.time)/division);
+numVert = floor((handles.time(end)-handles.time(1))/division) + 4;
 
 for i = 1:numVert
     hold on
-    plot([i*division, i*division], [0, numPlot*10+10], 'Color', [0.5, 0.5, 0.5]);
+    
+    handles.bufferVals = 1;
+    
+    vertBounds = [(handles.timeVals(1)-handles.bufferVals(1)-1) + division*i,...
+                  (handles.timeVals(1)-handles.bufferVals(1)-1) + division*i];
+    
+    plot(vertBounds, [0, numPlot*10+10], 'Color', [0.5, 0.5, 0.5]);
     hold on
 end % END FOR
 
 switch handles.plotMode
     case 1
-        plot(handles.time,handles.plotData(handles.chans,:)', 'k');
+%         plot(handles.time,handles.plotData(handles.chans,:)', 'k');
+        plot(handles.time,handles.plotData(:,:)', 'k');
         
         xlim([handles.time(1), handles.time(end)])
         ylim([5, handles.numChans*10+5])

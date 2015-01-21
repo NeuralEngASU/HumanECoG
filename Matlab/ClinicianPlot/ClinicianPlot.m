@@ -380,7 +380,7 @@ end % END IF
 
 % Plot verticial divisions
 
-division = 0.5; % Have a vertical line every 30 seconds
+division = 1; % Have a vertical line every 60 seconds
 
 numVert = floor((handles.time(end)-handles.time(1))/division) + 4;
 
@@ -397,7 +397,7 @@ end % END FOR
 switch handles.plotMode
     case 1
 %         plot(handles.time,handles.plotData(handles.chans,:)', 'k');
-        handles.pHandle = plot(handles.time,handles.plotData(handles.plotChans,:)', 'k');
+        handles.pHandle = plot(handles.time,handles.plotData(:,:)', 'k');
         
         xlim([handles.time(1), handles.time(end)])
         ylim([5, handles.numPlotChans*10+5])
@@ -410,7 +410,7 @@ switch handles.plotMode
         
     case 2
         
-        handles.pHandle = plot(handles.time,handles.plotData(handles.plotChans,:)', 'k');
+        handles.pHandle = plot(handles.time,handles.plotData(:,:)', 'k');
         
         xlim([handles.time(1), handles.time(end)])
         ylim([5, numPlot*10+5])
@@ -441,7 +441,7 @@ guidata(hObject, handles);
  
 function handles = LoadData(hObject, handles)
 
-tmpChans = 96;
+tmpChans = max(handles.chans);
 
 dataLen = length([handles.timeCount - handles.timeBoundCount: handles.timeCount + handles.timeBoundCount]);
 
@@ -453,9 +453,9 @@ scaleVal = scalePos(handles.scale);
 
 handles.data = data.*scaleVal;
 
-if handles.plotMode == 2
-    handles.data = handles.data([1:2:tmpChans],:) - handles.data([2:2:tmpChans],:);
-end % END IF
+% if handles.plotMode == 2
+%     handles.data = handles.data([1:2:tmpChans],:) - handles.data([2:2:tmpChans],:);
+% end % END IF
    
 
 guidata(hObject, handles);

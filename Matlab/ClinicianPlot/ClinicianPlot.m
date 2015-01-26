@@ -44,7 +44,7 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before ClinicianPlot is made visible.
+%%%% Initialization of Vairables %%%%
 function ClinicianPlot_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for ClinicianPlot
 handles.output = hObject;
@@ -79,15 +79,12 @@ handles.specData = [];
 
 % Update handles structure
 guidata(hObject, handles);
+% END FUNCTION
 
-% UIWAIT makes ClinicianPlot wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
-
-
-% --- Outputs from this function are returned to the command line.
+% Output commands to command line %
 function varargout = ClinicianPlot_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = handles.output;
-
+% END FUNCTION
 
 %%%% MonoPhasicButton %%%%
 function MonoPhasicButton_Callback(hObject, eventdata, handles)
@@ -259,108 +256,102 @@ guidata(hObject, handles); % Save the handles object
 function TimeBoundET_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
-end
+end % END IF
+% END FUNCTION
 
-% --- Executes on slider movement.
+%%%% Time Slide Bar %%%%
 function TimeSB_Callback(hObject, eventdata, handles)
+handles.panLevel = get(hObject,'Value');  % Get the slide bar value
+SetZoomPan(handles); % Move the plot figure
+guidata(hObject, handles); % Save the handles object
+% END FUNCTION
 
-handles.panLevel = get(hObject,'Value');
-
-SetZoomPan(handles);
-
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
+% Time Slide Bar Creation Function %
 function TimeSB_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
-% --- Executes on slider movement.
+%%%% Zoom Slide Bar %%%%
 function ZoomSB_Callback(hObject, eventdata, handles)
-% hObject    handle to ZoomSB (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+x = get(hObject,'Value'); % Get slide bar value
 
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-x = get(hObject,'Value');
-
+% Gaussian fit coefficients
 a1 = 10.61;
 b1 =  1.096;
 c1 =  0.3976;
 
-handles.zoomLevel = a1*exp(-((x-b1)/c1)^2)+0.0947;
+handles.zoomLevel = a1*exp(-((x-b1)/c1)^2)+0.0947; % Zoom equation
+SetZoomPan(handles); % Scale the plot figure
 
-SetZoomPan(handles);
+guidata(hObject, handles); % Save the handles object
+% END FUNCTION
 
-guidata(hObject, handles);
-
-
-function SetZoomPan(handles)
-
-set(gca, 'XLim', [handles.panLevel-handles.zoomLevel, handles.panLevel+handles.zoomLevel]);
-
-% --- Executes during object creation, after setting all properties.
+% Zoom Slide Bar Creation Function %
 function ZoomSB_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
+end % END IF
+% END FUNCTION 
 
-% --- Executes on button press in FileButton.
+%%%% Set Zoom and Pan %%%%
+function SetZoomPan(handles)
+% Sets the figure's zoom and pan
+set(gca, 'XLim', [handles.panLevel-handles.zoomLevel, handles.panLevel+handles.zoomLevel]);
+% END FUNCTION
+
+%%%% Load File Button %%%%
 function FileButton_Callback(hObject, eventdata, handles)
 
 [fileName, pathName] = uigetfile();
 
 handles.fileName = fileName;
 handles.pathName = pathName;
-handles.fullNime = fullfile(pathName, fileName);
+handles.fullName = fullfile(pathName, fileName);
 
 handles.reLoad = 1;
 
 guidata(hObject, handles);
 % END FUNCTION
 
-% --- Executes on button press in UpdatePlotButton.
+%%%% Update Plot Button %%%%
 function UpdatePlotButton_Callback(hObject, eventdata, handles)
-handles = UpdatePlot(hObject,handles);
+handles = UpdatePlot(hObject,handles); % Calls the update plot function
 guidata(hObject, handles);
 % END FUNCTION
 
-% --- Executes on button press in MakeSpecPB.
+%%%% Make Spectrogram Button %%%%
 function MakeSpecPB_Callback(hObject, eventdata, handles)
-handles = MakeSpectrogram(handles);
+handles = MakeSpectrogram(handles); % Calls the make spectrogram function
 guidata(hObject, handles);
 % END FUNCTION
 
-
-
+%%%% Spectrogram Edit Text %%%%
 function SpecChannelET_Callback(hObject, eventdata, handles)
-handles.specChan = str2double(get(hObject, 'String'));
+handles.specChan = str2double(get(hObject, 'String')); % Gather the inputted number
 guidata(hObject, handles);
 % END FUNCTION
 
-% --- Executes during object creation, after setting all properties.
+% Spectrogram Edit Text Creation Function %
 function SpecChannelET_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end % END IF
 % END FUNCTION
 
+%%%% Update Plot - Updates the main figure %%%%
 function handles = UpdatePlot(hObject,handles)
 
+% If we need to reload the data, reload the data
 if handles.reLoad
     handles = ChanSelect(handles);
     handles = LoadData(hObject,handles);
     handles.reLoad = 0;
 end % END IF
 
-cla
-% axes(handles.plotAxis) 
+cla; % Clear axis
 hold on
-numPlot = handles.numPlotChans;
+numPlot = handles.numPlotChans; % Temporary variable for the number of channels to plot
 
 % Offset Data
 offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:)));
@@ -398,7 +389,6 @@ if mod(elecPerPatch,2) == 0
 end % END IF
 
 % Plot verticial divisions
-
 division = 1; % Have a vertical line every 60 seconds
 
 numVert = floor((handles.time(end)-handles.time(1))/division) + 4;
@@ -451,6 +441,8 @@ switch handles.plotMode
 end % END SWITCH
 
 zoom(gcf, 10)
+
+% Set the slide bar
 set(handles.TimeSB, 'Max', ((handles.timeVals(1)+handles.timeVals(2)/60) + (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
 set(handles.TimeSB, 'Value', (handles.timeVals(1)+handles.timeVals(2)/60));
 set(handles.TimeSB, 'Min', ((handles.timeVals(1)+handles.timeVals(2)/60) - (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
@@ -458,6 +450,7 @@ set(handles.TimeSB, 'Min', ((handles.timeVals(1)+handles.timeVals(2)/60) - (hand
 guidata(hObject, handles);
 % END FUNCTION
  
+%%%% Load Data %%%% Currently setup for temporary data
 function handles = LoadData(hObject, handles)
 
 tmpChans = max(handles.chans);
@@ -472,14 +465,10 @@ scaleVal = scalePos(handles.scale);
 
 handles.data = data.*scaleVal;
 
-% if handles.plotMode == 2
-%     handles.data = handles.data([1:2:tmpChans],:) - handles.data([2:2:tmpChans],:);
-% end % END IF
-   
-
 guidata(hObject, handles);
 % END FUNCTION
 
+%%%% Channel Select %%%% Remap the selected channels based on the chosen mode
 function handles = ChanSelect(handles)
 
 if handles.plotMode == 1
@@ -494,10 +483,9 @@ else
     
     handles.numPlotChans = length(handles.plotChans);
 end % END IF
-
 % END FUNCTION
 
-
+%%%% Make Spectrogram %%%%
 function handles = MakeSpectrogram(handles)
 
 timeSpan = (handles.timeBoundVals(1)*60+handles.timeBoundVals(2))*2;
@@ -522,7 +510,6 @@ ylabel('Frequency, Hz')
 
 guidata(hObject, handles);
 % END FUNCTION
-
 
 % EOF
 

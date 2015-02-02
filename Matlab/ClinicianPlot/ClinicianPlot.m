@@ -499,9 +499,9 @@ function handles = MakeSpectrogram(handles)
 handles.specWindow = [1.5, 0.5];
 
 % MT-Spectrogram params
-handles.specParams.tapers = [3,5];  % Tapers
+handles.specParams.tapers = [3, 5];  % Tapers
 handles.specParams.Fs = 1000;       % Fs
-handles.specParams.Fpass = [0,500]; % Fpass
+handles.specParams.Fpass = [300,400]; % Fpass
 handles.specParams.pad = 2;         % Padding (next,nextpow2)
 
 % Testing Chirp data
@@ -515,7 +515,7 @@ elseif handles.plotMode == 2
 end % END IF
 
 % Calculates the multi-taper spectrogram
-[handles.specS,handles.specT,handles.specF]=mtspecgramc(handles.data(handles.specChanPlot,:),handles.specWindow,handles.specParams);
+[handles.specS,handles.specT,handles.specF] = mtspecgramc(handles.data(handles.specChanPlot,:),handles.specWindow,handles.specParams);
 % [handles.specS,handles.specT,handles.specF]=mtspecgramc(chirpData,handles.specWindow,handles.specParams);
 
 figure(2)  % Open a new figure window

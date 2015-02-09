@@ -4,7 +4,7 @@ function varargout = ClinicianPlot(varargin)
 
 % Edit the above text to modify the response to help ClinicianPlot
 
-% Last Modified by GUIDE v2.5 27-Jan-2015 15:36:40
+% Last Modified by GUIDE v2.5 09-Feb-2015 11:36:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,6 +52,8 @@ handles.timeBoundVals = [1];        % Time bound on each side of the point of in
 handles.specData = [];              % Spectrogram
 handles.plotMode = 1;               % Default Mode is mono-phasic plot
 handles.fs = 500;                   % 500 samples/sec (Default)
+handles.freqBoundLow = 0;          % Lower frequency bound on spectrogram (Hz)
+handles.freqBoundHigh = 500;        % Upper frequency bound on spectrogram (Hz)
 
 handles.zoomLevel = 1; % 1 minute either side of center
 handles.panLevel = 0; % Center of plot in minutes
@@ -318,6 +320,32 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end % END IF
 % END FUNCTION
 
+%%%% Frequency Low Bound %%%%
+function FreqLowET_Callback(hObject, eventdata, handles)
+handles.freqBoundLow = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+% END FUNCTION
+
+% Frequency Low Bound Creation Function %
+function FreqLowET_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end % END IF
+% END FUNCTION
+
+%%%% Frequency High Bound %%%%
+function FreqHighET_Callback(hObject, eventdata, handles)
+handles.freqBoundHigh = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+% END FUNCTION
+
+% Frequency High Bound Creation Function %
+function FreqHighET_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end % END IF
+% END FUNCTION
+
 %%%% Update Plot - Updates the main figure %%%%
 function handles = UpdatePlot(hObject,handles)
 
@@ -500,9 +528,9 @@ handles.specWindow = [1.5, 0.5];
 
 % MT-Spectrogram params
 handles.specParams.tapers = [3, 5];  % Tapers
-handles.specParams.Fs = 1000;       % Fs
-handles.specParams.Fpass = [300,400]; % Fpass
-handles.specParams.pad = 2;         % Padding (next,nextpow2)
+handles.specParams.Fs = 1000;        % Fs
+handles.specParams.Fpass = [0, 500]; % Fpass
+handles.specParams.pad = 2;          % Padding (next,nextpow2)
 
 % Testing Chirp data
 % chirpData = chirp(0:0.001:10*60, 0, 60*10, 500);
@@ -540,6 +568,7 @@ end % END IF
 
 xlabel('Time, min') % Time label
 ylabel('Frequency, Hz') % Frequency label
+ylim([handles.freqBoundLow, handles.freqBoundHigh])
 
 % Time offset
 timeOffset = [handles.timeVals(1)-handles.timeBoundVals(1)-1, handles.timeVals(1)+handles.timeBoundVals(1)+1];

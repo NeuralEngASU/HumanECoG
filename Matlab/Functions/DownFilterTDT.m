@@ -180,9 +180,6 @@ end % END FOR
 
 fprintf('\n********************\nCOMPLETED DOWNSAMPLE AND FILTERING\nFile output: %s\n\n', fullCSCMAT)
 
-
-
-
 end % END FUNCTION
 
 % EOF

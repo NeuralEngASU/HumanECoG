@@ -479,17 +479,28 @@ set(handles.TimeSB, 'Min', ((handles.timeVals(1)+handles.timeVals(2)/60) - (hand
 guidata(hObject, handles);
 % END FUNCTION
  
-%%%% Load Data %%%% Currently setup for temporary data
+%%%% Load Data %%%%
 function handles = LoadData(hObject, handles)
 
-tmpChans = max(handles.chans)+mod(max(handles.chans),2);
+load(handles.fullName, 'Header');
 
-dataLen = length([handles.timeCount - handles.timeBoundCount: handles.timeCount + handles.timeBoundCount]);
+data = [];
 
-data = ones(tmpChans, dataLen).*repmat(sin(pi*350*(1:dataLen)./handles.fs), tmpChans,1) + randn(tmpChans, dataLen)/2;
+for ii = 1:Header.numChan
+    varName = ['C', num2str(ii)];
+    load(handles.fullName, varName);
+    
+    eval(['data = [data; ', varName, '];']);
+end % END FOR concatinate data
+
+% tmpChans = max(handles.chans)+mod(max(handles.chans),2);
+% 
+% dataLen = length([handles.timeCount - handles.timeBoundCount: handles.timeCount + handles.timeBoundCount]);
+% 
+% data = ones(tmpChans, dataLen).*repmat(sin(pi*350*(1:dataLen)./handles.fs), tmpChans,1) + randn(tmpChans, dataLen)/2;
 
 if handles.plotMode == 2
-    data = data([1:2:tmpChans],:) - data([2:2:tmpChans],:);
+    data = data([1:2:Header.numChan],:) - data([2:2:Header.numChan],:);
 end % END IF
 
 scalePos = [1000,100,10,1, 0.1];

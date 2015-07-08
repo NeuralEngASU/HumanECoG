@@ -354,7 +354,7 @@ if handles.reLoad
     handles = ChanSelect(handles);
     handles = LoadData(hObject,handles);
     handles.reLoad = 0;
-end % END IF
+end % END IF'Time
 
 cla; % Clear axis
 hold on
@@ -364,9 +364,12 @@ numPlot = handles.numPlotChans; % Temporary variable for the number of channels 
 offset = repmat([10:10:numPlot*10]', 1, length(handles.data(1,:)));
 handles.plotData = handles.data(handles.plotChans,:) + offset;
 
-handles.time = [handles.timeCount - handles.timeBoundCount : handles.timeCount + handles.timeBoundCount];
+% handles.time = [handles.timeCount - handles.timeBoundCount : handles.timeCount + handles.timeBoundCount];
+% 
+% handles.time = handles.time./(60*handles.fs);
 
-handles.time = handles.time./(60*handles.fs);
+handles.time = linspace(handles.Header.timeBounds(1), handles.Header.timeBounds(2), size(handles.plotData,2));
+
 
 % Plot pathces
 if handles.numPatch > 0
@@ -383,11 +386,16 @@ if handles.numPatch > 0
                      elecPerPatch*i*10+5,...      % Max Y
                      elecPerPatch*i*10+5];        % Max Y
                  
-        XX(i,1:4) = [handles.timeVals(1)-handles.timeBoundVals(1)-2,... % Min X
-                     handles.timeVals(1)+handles.timeBoundVals(1)+2,... % Max X
-                     handles.timeVals(1)+handles.timeBoundVals(1)+2,... % Max X
-                     handles.timeVals(1)-handles.timeBoundVals(1)-2];   % Min X
+%         XX(i,1:4) = [handles.timeVals(1)-handles.timeBoundVals(1)-2,... % Min X
+%                      handles.timeVals(1)+handles.timeBoundVals(1)+2,... % Max X
+%                      handles.timeVals(1)+handles.timeBoundVals(1)+2,... % Max X
+%                      handles.timeVals(1)-handles.timeBoundVals(1)-2];   % Min X
     
+        XX(i,1:4) = [handles.time(1)-2,... % Min X
+                     handles.time(end)+2,... % Max X
+                     handles.time(end)+2,... % Max X
+                     handles.time(1)-2];   % Min X
+
     end % END FOR
     
     YY(i,1:4) = [elecPerPatch*(i-1)*10+5,... % Max Y
@@ -426,8 +434,8 @@ for i = 1:numVert
     hold on
     
     % Vertical bounds are set for every 60 seconds
-    vertBounds = [(handles.timeVals(1)-handles.timeBoundVals(1)-2) + division*i,...
-                  (handles.timeVals(1)-handles.timeBoundVals(1)-2) + division*i];
+    vertBounds = [(handles.time(1) -2) + division*i,...
+                  (handles.time(end)+2) + division*i];
     
     % Plot each vertical line
     plot(vertBounds, [0, numPlot*10+10], 'Color', [0.5, 0.5, 0.5]);
@@ -472,9 +480,13 @@ set(pan(gcf),'Motion','horizontal','Enable','on');
 SetZoomPan(handles);
 
 % Set the slide bar limits and value
-set(handles.TimeSB, 'Max', ((handles.timeVals(1)+handles.timeVals(2)/60) + (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
-set(handles.TimeSB, 'Value', (handles.timeVals(1)+handles.timeVals(2)/60));
-set(handles.TimeSB, 'Min', ((handles.timeVals(1)+handles.timeVals(2)/60) - (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
+% set(handles.TimeSB, 'Max', ((handles.timeVals(1)+handles.timeVals(2)/60) + (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
+% set(handles.TimeSB, 'Value', (handles.timeVals(1)+handles.timeVals(2)/60));
+% set(handles.TimeSB, 'Min', ((handles.timeVals(1)+handles.timeVals(2)/60) - (handles.timeBoundVals(1)+handles.timeBoundVals(2)/60)));
+
+set(handles.TimeSB, 'Max', (handles.Header.timeBounds(1)));
+set(handles.TimeSB, 'Value', 0);
+set(handles.TimeSB, 'Min', (handles.Header.timeBounds(end)));
 
 guidata(hObject, handles);
 % END FUNCTION
@@ -484,6 +496,7 @@ function handles = LoadData(hObject, handles)
 
 load(handles.fullName, 'Header');
 
+handles.Header = Header;
 data = [];
 
 for ii = 1:Header.numChan

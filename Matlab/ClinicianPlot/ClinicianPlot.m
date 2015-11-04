@@ -552,8 +552,8 @@ handles.specWindow = [1.5, 0.5];
 
 % MT-Spectrogram params
 handles.specParams.tapers = [3, 5];  % Tapers
-handles.specParams.Fs = 1000;        % Fs
-handles.specParams.Fpass = [0, 500]; % Fpass
+handles.specParams.Fs = 500;        % Fs
+handles.specParams.Fpass = [0, 250]; % Fpass
 handles.specParams.pad = 2;          % Padding (next,nextpow2)
 
 % Testing Chirp data
